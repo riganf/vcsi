@@ -181,6 +181,7 @@ class MediaInfo(object):
         self.probe_media(path)
         self.find_video_stream()
         self.find_audio_stream()
+        self.find_subtitle_stream()
         self.compute_display_resolution()
         self.compute_format()
         self.parse_attributes()
@@ -243,6 +244,19 @@ class MediaInfo(object):
             except:
                 pass
 
+    def find_subtitle_stream(self):
+        """Find all subtitle stream
+        """
+        self.subtitle_stream = []
+        for stream in self.ffprobe_dict["streams"]:
+            try:
+                if stream["codec_type"] == "subtitle":
+                    if "tags" in stream:
+                        if "language" in stream["tags"]:
+                            self.subtitle_stream.append(stream["tags"]["language"])
+            except:
+                pass
+
     def compute_display_resolution(self):
         """Computes the display resolution.
         Some videos have a sample resolution that differs from the display resolution
@@ -302,6 +316,12 @@ class MediaInfo(object):
 
         self.size_bytes = int(format_dict["size"])
         self.size = self.human_readable_size(self.size_bytes)
+
+        try:
+            self.average_bit_rate_bytes = int(format_dict["bit_rate"])
+            self.average_bit_rate = self.human_readable_size(self.average_bit_rate_bytes)
+        except (KeyError, AttributeError):
+            self.average_bit_rate = None
 
     @staticmethod
     def pretty_to_seconds(
@@ -413,6 +433,11 @@ class MediaInfo(object):
             self.display_aspect_ratio = self.video_stream["display_aspect_ratio"]
         except KeyError:
             self.display_aspect_ratio = None
+  
+        try:
+            self.pix_format = self.video_stream["pix_fmt"]
+        except KeyError:
+            self.pix_format = None
 
         try:
             self.frame_rate = self.video_stream["avg_frame_rate"]
@@ -449,6 +474,24 @@ class MediaInfo(object):
             self.audio_bit_rate = int(self.audio_stream["bit_rate"])
         except (KeyError, AttributeError):
             self.audio_bit_rate = None
+        
+        try:
+            self.audio_channel_layout = self.audio_stream["channel_layout"]
+        except (KeyError, AttributeError):
+            self.audio_channel_layout = None
+
+        try:
+            self.audio_language = self.audio_stream["tags"]["language"]
+        except (KeyError, AttributeError):
+            self.audio_language = None
+ 
+        # subtitle
+        try:
+            self.subtitle_list = ""
+            for abc in self.subtitle_stream:
+                self.subtitle_list += f"{abc} "
+        except:
+            self.subtitle_list = None
 
     def template_attributes(self):
         """Returns the template attributes and values ready for use in the metadata header
@@ -464,6 +507,7 @@ class MediaInfo(object):
         table.append({"name": "size_bytes", "description": "File size (bytes)", "example": "4662788373"})
         table.append({"name": "filename", "description": "File name", "example": "video.mkv"})
         table.append({"name": "duration", "description": "Duration (pretty format)", "example": "03:07"})
+        table.append({"name": "average_bit_rate", "description": "Average bitrate", "example": "7766 KiB"})
         table.append({"name": "sample_width", "description": "Sample width (pixels)", "example": "1920"})
         table.append({"name": "sample_height", "description": "Sample height (pixels)", "example": "1080"})
         table.append({"name": "display_width", "description": "Display width (pixels)", "example": "1920"})
@@ -471,6 +515,7 @@ class MediaInfo(object):
         table.append({"name": "video_codec", "description": "Video codec", "example": "h264"})
         table.append({"name": "video_codec_long", "description": "Video codec (long name)",
                       "example": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"})
+        table.append({"name": "pix_format", "description": "Pix format", "example": "yuv420p"})
         table.append({"name": "video_bit_rate", "description": "Video bitrate", "example": "4000"})
         table.append({"name": "display_aspect_ratio", "description": "Display aspect ratio", "example": "16:9"})
         table.append({"name": "sample_aspect_ratio", "description": "Sample aspect ratio", "example": "1:1"})
@@ -479,7 +524,10 @@ class MediaInfo(object):
                       "example": "AAC (Advanced Audio Coding)"})
         table.append({"name": "audio_sample_rate", "description": "Audio sample rate (Hz)", "example": "44100"})
         table.append({"name": "audio_bit_rate", "description": "Audio bit rate (bits/s)", "example": "192000"})
+        table.append({"name": "audio_channel_layout", "description": "Audio channel layout", "example": "stereo"})
+        table.append({"name": "audio_language", "description": "Audio language", "example": "eng"})
         table.append({"name": "frame_rate", "description": "Frame rate (frames/s)", "example": "23.974"})
+        table.append({"name": "subtitle_list", "description": "List subtitles", "example": "eng ind ita"})
         return table
 
 
