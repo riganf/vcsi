@@ -216,11 +216,17 @@ class MediaInfo(object):
     def human_readable_size(self, num, suffix='B'):
         """Converts a number of bytes to a human readable format
         """
-        for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+        for unit in ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z']:
             if abs(num) < 1024.0:
                 return "%3.1f %s%s" % (num, unit, suffix)
             num /= 1024.0
-        return "%.1f %s%s" % (num, 'Yi', suffix)
+        return "%.1f %s%s" % (num, 'Y', suffix)
+
+    def readable_bit_rate(self, num):
+        """Convert bitrate to bit
+        """
+        asu = num/1000
+        return int(asu)
 
     def find_video_stream(self):
         """Find the first stream which is a video stream
@@ -319,7 +325,7 @@ class MediaInfo(object):
 
         try:
             self.average_bit_rate_bytes = int(format_dict["bit_rate"])
-            self.average_bit_rate = self.human_readable_size(self.average_bit_rate_bytes)
+            self.average_bit_rate = str(int(self.readable_bit_rate(self.average_bit_rate_bytes))) + " kb/s"
         except (KeyError, AttributeError):
             self.average_bit_rate = None
 
